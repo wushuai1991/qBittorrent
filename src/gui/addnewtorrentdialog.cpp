@@ -29,6 +29,8 @@
 
 #include "addnewtorrentdialog.h"
 
+#include <QComboBox>
+
 #include <algorithm>
 #include <functional>
 
@@ -333,6 +335,14 @@ AddNewTorrentDialog::AddNewTorrentDialog(const BitTorrent::TorrentDescriptor &to
     m_filterLine->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_filterLine, &QWidget::customContextMenuRequested, this, &AddNewTorrentDialog::showContentFilterContextMenu);
     m_ui->contentFilterLayout->insertWidget(3, m_filterLine);
+
+    // Extension filter combo box
+    m_extensionFilterComboBox = new QComboBox(this);
+    m_extensionFilterComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_extensionFilterComboBox->addItem(tr("All files"));
+    connect(m_extensionFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged)
+            , this, &AddNewTorrentDialog::onExtensionFilterChanged);
+    m_ui->contentFilterLayout->insertWidget(4, m_extensionFilterComboBox);
     const auto *focusSearchHotkey = new QShortcut(QKeySequence::Find, this);
     connect(focusSearchHotkey, &QShortcut::activated, this, [this]()
     {
@@ -480,6 +490,10 @@ void AddNewTorrentDialog::setCurrentContext(const std::shared_ptr<Context> conte
 
     m_filterLine->blockSignals(true);
     m_filterLine->clear();
+
+    m_extensionFilterComboBox->blockSignals(true);
+    m_extensionFilterComboBox->setCurrentIndex(0);
+    m_extensionFilterComboBox->blockSignals(false);
 
     // Default focus
     if (m_ui->comboTMM->currentIndex() == 0) // 0 is Manual mode
@@ -728,6 +742,39 @@ void AddNewTorrentDialog::setContentFilterPattern()
     m_ui->contentTreeView->setFilterPattern(m_filterLine->text(), m_storeFilterPatternFormat.get(FilterPatternFormat::Wildcards));
 }
 
+void AddNewTorrentDialog::updateExtensionFilterComboBox()
+{
+    m_extensionFilterComboBox->blockSignals(true);
+    const int prevIndex = m_extensionFilterComboBox->currentIndex();
+    const QString prevExtension = (prevIndex > 0) ? m_extensionFilterComboBox->itemData(prevIndex).toString() : QString();
+
+    m_extensionFilterComboBox->clear();
+    m_extensionFilterComboBox->addItem(tr("All files"));
+
+    const QList<QPair<QString, int>> extensions = m_ui->contentTreeView->getFileExtensions();
+    int selectIndex = 0;
+    for (int i = 0; i < extensions.size(); ++i)
+    {
+        const QString &ext = extensions[i].first;
+        const int count = extensions[i].second;
+        m_extensionFilterComboBox->addItem(u"%1 (%2)"_s.arg(ext).arg(count), ext);
+        if (ext == prevExtension)
+            selectIndex = i + 1;  // +1 因为 "All files" 占了 index 0
+    }
+
+    m_extensionFilterComboBox->setCurrentIndex(selectIndex);
+    m_extensionFilterComboBox->blockSignals(false);
+
+    // 应用当前选择的扩展名过滤
+    onExtensionFilterChanged(selectIndex);
+}
+
+void AddNewTorrentDialog::onExtensionFilterChanged(const int index)
+{
+    const QString extension = (index > 0) ? m_extensionFilterComboBox->itemData(index).toString() : QString();
+    m_ui->contentTreeView->setExtensionFilter(extension);
+}
+
 void AddNewTorrentDialog::populateSavePaths()
 {
     Q_ASSERT(m_currentContext);
@@ -939,6 +986,7 @@ void AddNewTorrentDialog::setupTreeview()
 
     m_filterLine->blockSignals(false);
 
+    updateExtensionFilterComboBox();
     updateDiskSpaceLabel();
 }
 

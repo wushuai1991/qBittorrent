@@ -70,12 +70,33 @@ QModelIndex TorrentContentFilterModel::parent(const QModelIndex &child) const
     return mapFromSource(sourceParent);
 }
 
+void TorrentContentFilterModel::setExtensionFilter(const QString &extension)
+{
+    m_extensionFilter = extension;
+    invalidateFilter();
+}
+
+QString TorrentContentFilterModel::extensionFilter() const
+{
+    return m_extensionFilter;
+}
+
 bool TorrentContentFilterModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     if (m_model->itemType(m_model->index(sourceRow, 0, sourceParent)) == TorrentContentModelItem::FolderType)
     {
         // accept folders if they have at least one filtered item
         return hasFiltered(m_model->index(sourceRow, 0, sourceParent));
+    }
+
+    if (!m_extensionFilter.isEmpty())
+    {
+        const QString name = m_model->index(sourceRow, TorrentContentModelItem::COL_NAME, sourceParent)
+                                 .data(TorrentContentModel::UnderlyingDataRole).toString();
+        const int dotPos = name.lastIndexOf(u'.');
+        const QString ext = (dotPos >= 0) ? name.mid(dotPos + 1).toLower() : QString();
+        if (ext != m_extensionFilter.toLower())
+            return false;
     }
 
     return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
@@ -127,6 +148,15 @@ bool TorrentContentFilterModel::hasFiltered(const QModelIndex &folder) const
                 return true;
 
             continue;
+        }
+
+        if (!m_extensionFilter.isEmpty())
+        {
+            name = childIndex.data(TorrentContentModel::UnderlyingDataRole).toString();
+            const int dotPos = name.lastIndexOf(u'.');
+            const QString ext = (dotPos >= 0) ? name.mid(dotPos + 1).toLower() : QString();
+            if (ext != m_extensionFilter.toLower())
+                continue;
         }
 
         name = childIndex.data().toString();

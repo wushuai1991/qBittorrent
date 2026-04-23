@@ -30,6 +30,7 @@
 #include "propertieswidget.h"
 
 #include <QClipboard>
+#include <QComboBox>
 #include <QDateTime>
 #include <QDebug>
 #include <QFuture>
@@ -45,6 +46,7 @@
 #include "base/bittorrent/infohash.h"
 #include "base/bittorrent/session.h"
 #include "base/bittorrent/torrent.h"
+#include "base/global.h"
 #include "base/path.h"
 #include "base/preferences.h"
 #include "base/types.h"
@@ -85,6 +87,14 @@ PropertiesWidget::PropertiesWidget(QWidget *parent)
     connect(m_contentFilterLine, &QWidget::customContextMenuRequested, this, &PropertiesWidget::showContentFilterContextMenu);
     connect(m_contentFilterLine, &LineEdit::textChanged, this, &PropertiesWidget::setContentFilterPattern);
     m_ui->contentFilterLayout->insertWidget(3, m_contentFilterLine);
+
+    // Extension filter combo box
+    m_extensionFilterComboBox = new QComboBox(this);
+    m_extensionFilterComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_extensionFilterComboBox->addItem(tr("All files"));
+    connect(m_extensionFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged)
+            , this, &PropertiesWidget::onExtensionFilterChanged);
+    m_ui->contentFilterLayout->insertWidget(4, m_extensionFilterComboBox);
 
     m_ui->filesList->setContentDragAllowed(true);
     m_ui->filesList->setDoubleClickAction(TorrentContentWidget::DoubleClickAction::Open);
@@ -243,6 +253,10 @@ void PropertiesWidget::clear()
     m_piecesAvailability->clear();
     m_peerList->clear();
     m_contentFilterLine->clear();
+
+    m_extensionFilterComboBox->blockSignals(true);
+    m_extensionFilterComboBox->setCurrentIndex(0);
+    m_extensionFilterComboBox->blockSignals(false);
 }
 
 BitTorrent::Torrent *PropertiesWidget::getCurrentTorrent() const
@@ -303,6 +317,39 @@ void PropertiesWidget::setContentFilterPattern()
     m_ui->filesList->setFilterPattern(m_contentFilterLine->text(), m_storeFilterPatternFormat.get(FilterPatternFormat::Wildcards));
 }
 
+void PropertiesWidget::updateExtensionFilterComboBox()
+{
+    m_extensionFilterComboBox->blockSignals(true);
+    const int prevIndex = m_extensionFilterComboBox->currentIndex();
+    const QString prevExtension = (prevIndex > 0) ? m_extensionFilterComboBox->itemData(prevIndex).toString() : QString();
+
+    m_extensionFilterComboBox->clear();
+    m_extensionFilterComboBox->addItem(tr("All files"));
+
+    const QList<QPair<QString, int>> extensions = m_ui->filesList->getFileExtensions();
+    int selectIndex = 0;
+    for (int i = 0; i < extensions.size(); ++i)
+    {
+        const QString &ext = extensions[i].first;
+        const int count = extensions[i].second;
+        m_extensionFilterComboBox->addItem(u"%1 (%2)"_s.arg(ext).arg(count), ext);
+        if (ext == prevExtension)
+            selectIndex = i + 1;  // +1 因为 "All files" 占了 index 0
+    }
+
+    m_extensionFilterComboBox->setCurrentIndex(selectIndex);
+    m_extensionFilterComboBox->blockSignals(false);
+
+    // 应用当前选择的扩展名过滤
+    onExtensionFilterChanged(selectIndex);
+}
+
+void PropertiesWidget::onExtensionFilterChanged(const int index)
+{
+    const QString extension = (index > 0) ? m_extensionFilterComboBox->itemData(index).toString() : QString();
+    m_ui->filesList->setExtensionFilter(extension);
+}
+
 void PropertiesWidget::updateTorrentInfos(BitTorrent::Torrent *const torrent)
 {
     if (torrent == m_torrent)
@@ -319,6 +366,8 @@ void PropertiesWidget::loadTorrentInfos(BitTorrent::Torrent *const torrent)
     m_ui->filesList->setContentHandler(m_torrent);
     if (!m_torrent)
         return;
+
+    updateExtensionFilterComboBox();
 
     // Save path
     updateSavePath(m_torrent);

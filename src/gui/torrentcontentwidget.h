@@ -29,6 +29,8 @@
 
 #pragma once
 
+#include <QHash>
+#include <QPair>
 #include <QTreeView>
 
 #include "base/bittorrent/downloadpriority.h"
@@ -95,6 +97,9 @@ public:
 
     void setFilterPattern(const QString &patternText, FilterPatternFormat format = FilterPatternFormat::Wildcards);
 
+    void setExtensionFilter(const QString &extension);
+    QList<QPair<QString, int>> getFileExtensions() const;
+
     void checkAll();
     void checkNone();
 
@@ -124,6 +129,7 @@ private:
     // Expand single-item folders recursively.
     // This will trigger sorting and filtering so do it after all relevant data is loaded.
     void expandRecursively();
+    void collectFileExtensions(const QModelIndex &index, QHash<QString, int> &extCount) const;
 
     TorrentContentModel *m_model;
     TorrentContentFilterModel *m_filterModel;

@@ -38,6 +38,7 @@
 #include "filterpatternformat.h"
 
 class LineEdit;
+class QComboBox;
 
 namespace BitTorrent
 {
@@ -98,6 +99,8 @@ private:
     void saveTorrentFile();
     void showContentFilterContextMenu();
     void setContentFilterPattern();
+    void updateExtensionFilterComboBox();
+    void onExtensionFilterChanged(int index);
 
     Ui::AddNewTorrentDialog *m_ui = nullptr;
     std::unique_ptr<TorrentContentAdaptor> m_contentAdaptor;
@@ -105,6 +108,7 @@ private:
     int m_downloadPathIndex = -1;
     bool m_useDownloadPath = false;
     LineEdit *m_filterLine = nullptr;
+    QComboBox *m_extensionFilterComboBox = nullptr;
 
     std::shared_ptr<Context> m_currentContext;
 

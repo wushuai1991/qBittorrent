@@ -36,6 +36,7 @@
 #include "gui/filterpatternformat.h"
 
 class QPushButton;
+class QComboBox;
 class QTreeView;
 
 class DownloadedPiecesBar;
@@ -105,6 +106,8 @@ private:
     QPushButton *getButtonFromIndex(int index);
     void showContentFilterContextMenu();
     void setContentFilterPattern();
+    void updateExtensionFilterComboBox();
+    void onExtensionFilterChanged(int index);
 
     Ui::PropertiesWidget *m_ui = nullptr;
     BitTorrent::Torrent *m_torrent = nullptr;
@@ -117,6 +120,7 @@ private:
     PieceAvailabilityBar *m_piecesAvailability = nullptr;
     PropTabBar *m_tabBar = nullptr;
     LineEdit *m_contentFilterLine = nullptr;
+    QComboBox *m_extensionFilterComboBox = nullptr;
     int m_handleWidth = -1;
 
     SettingValue<FilterPatternFormat> m_storeFilterPatternFormat;

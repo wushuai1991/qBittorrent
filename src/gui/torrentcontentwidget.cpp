@@ -29,6 +29,7 @@
 
 #include "torrentcontentwidget.h"
 
+#include <algorithm>
 #include <QApplication>
 #include <QClipboard>
 #include <QDir>
@@ -213,6 +214,46 @@ void TorrentContentWidget::setFilterPattern(const QString &patternText, const Fi
     {
         expandAll();
     }
+}
+
+void TorrentContentWidget::setExtensionFilter(const QString &extension)
+{
+    m_filterModel->setExtensionFilter(extension);
+
+    if (extension.isEmpty())
+    {
+        collapseAll();
+        expand(m_filterModel->index(0, 0));
+    }
+    else
+    {
+        expandAll();
+    }
+}
+
+QList<QPair<QString, int>> TorrentContentWidget::getFileExtensions() const
+{
+    QHash<QString, int> extCount;
+    const int filesCount = m_model->rowCount(QModelIndex());
+    // Iterate through top-level items
+    for (int i = 0; i < filesCount; ++i)
+    {
+        const QModelIndex index = m_model->index(i, 0);
+        collectFileExtensions(index, extCount);
+    }
+
+    QList<QPair<QString, int>> result;
+    result.reserve(extCount.size());
+    for (auto it = extCount.cbegin(); it != extCount.cend(); ++it)
+        result.emplaceBack(it.key(), it.value());
+
+    // 按文件数量从高到低排序
+    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b)
+    {
+        return a.second > b.second;
+    });
+
+    return result;
 }
 
 void TorrentContentWidget::checkAll()
@@ -548,6 +589,27 @@ void TorrentContentWidget::expandRecursively()
     {
         currentIndex = model()->index(0, 0, currentIndex);
         setExpanded(currentIndex, true);
+    }
+}
+
+void TorrentContentWidget::collectFileExtensions(const QModelIndex &index, QHash<QString, int> &extCount) const
+{
+    if (m_model->hasChildren(index))
+    {
+        const int childCount = m_model->rowCount(index);
+        for (int i = 0; i < childCount; ++i)
+            collectFileExtensions(m_model->index(i, 0, index), extCount);
+    }
+    else
+    {
+        const QString name = index.data(TorrentContentModel::UnderlyingDataRole).toString();
+        const int dotPos = name.lastIndexOf(u'.');
+        if (dotPos >= 0)
+        {
+            const QString ext = name.mid(dotPos + 1).toLower();
+            if (!ext.isEmpty())
+                ++extCount[ext];
+        }
     }
 }
 

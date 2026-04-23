@@ -49,6 +49,9 @@ public:
     int getFileIndex(const QModelIndex &index) const;
     QModelIndex parent(const QModelIndex &child) const override;
 
+    void setExtensionFilter(const QString &extension);
+    QString extensionFilter() const;
+
 private:
     using QSortFilterProxyModel::setSourceModel;
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
@@ -57,4 +60,5 @@ private:
 
     TorrentContentModel *m_model = nullptr;
     Utils::Compare::NaturalLessThan<Qt::CaseInsensitive> m_naturalLessThan;
+    QString m_extensionFilter;
 };
