@@ -104,7 +104,6 @@
 #include "utils/keysequence.h"
 
 #ifdef Q_OS_MACOS
-#include "macosdockbadge/badger.h"
 #include "macosstatusitem/statusitem.h"
 #include "macutilities.h"
 #endif
@@ -139,7 +138,6 @@ MainWindow::MainWindow(IGUIApplication *app, const WindowState initialState, con
     , m_storeDownloadTrackerFavicon {SETTINGS_KEY(u"DownloadTrackerFavicon"_s)}
     , m_storeExecutionLogTypes {EXECUTIONLOG_SETTINGS_KEY(u"Types"_s), Log::MsgType::ALL}
 #ifdef Q_OS_MACOS
-    , m_badger {std::make_unique<MacUtils::Badger>()}
     , m_statusItem {std::make_unique<MacUtils::StatusItem>()}
 #endif // Q_OS_MACOS
 {
@@ -1461,9 +1459,6 @@ void MainWindow::loadPreferences()
 #endif
 
 #ifdef Q_OS_MACOS
-    // Clear dock badge immediately if speed display is disabled
-    if (!pref->isSpeedInDockEnabled())
-        m_badger->updateSpeed(0, 0);
     m_statusItem->setVisible(pref->isMacOSMenuBarIconEnabled());
 #endif
 
@@ -1479,8 +1474,6 @@ void MainWindow::loadSessionStats()
 
     // update global information
 #ifdef Q_OS_MACOS
-    if (Preferences::instance()->isSpeedInDockEnabled())
-        m_badger->updateSpeed(status.payloadDownloadRate, status.payloadUploadRate);
     if (Preferences::instance()->isMacOSMenuBarIconEnabled())
         m_statusItem->updateSpeed(status.payloadDownloadRate, status.payloadUploadRate);
 #else

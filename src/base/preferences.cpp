@@ -1509,19 +1509,6 @@ void Preferences::setUpdateCheckEnabled(const bool enabled)
 #endif
 
 #ifdef Q_OS_MACOS
-bool Preferences::isSpeedInDockEnabled() const
-{
-    return value(u"Preferences/Desktop/ShowSpeedInDock"_s, true);
-}
-
-void Preferences::setSpeedInDockEnabled(const bool enabled)
-{
-    if (enabled == isSpeedInDockEnabled())
-        return;
-
-    setValue(u"Preferences/Desktop/ShowSpeedInDock"_s, enabled);
-}
-
 bool Preferences::isMacOSMenuBarIconEnabled() const
 {
     return value(u"Preferences/Desktop/ShowMacOSMenuBarIcon"_s, true);

@@ -324,8 +324,6 @@ public:
     void setUpdateCheckEnabled(bool enabled);
 #endif
 #ifdef Q_OS_MACOS
-    bool isSpeedInDockEnabled() const;
-    void setSpeedInDockEnabled(bool enabled);
     bool isMacOSMenuBarIconEnabled() const;
     void setMacOSMenuBarIconEnabled(bool enabled);
 #endif
