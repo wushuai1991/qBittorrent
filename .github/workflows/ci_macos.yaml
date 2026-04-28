@@ -77,7 +77,9 @@ jobs:
           mv "${{ github.workspace }}/.."/boost_* "${{ env.boost_path }}"
           cd "${{ env.boost_path }}"
           ./bootstrap.sh
-          ./b2 stage --stagedir=./ --with-headers macosx-version-min=${MACOSX_DEPLOYMENT_TARGET}
+          # Note: only headers are staged, so no need to pass macosx-version-min to b2.
+          # The MACOSX_DEPLOYMENT_TARGET env var covers any incidental compilation.
+          ./b2 stage --stagedir=./ --with-headers
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
